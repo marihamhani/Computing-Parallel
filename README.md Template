@@ -1,0 +1,22 @@
+# Distributed and Parallel Computing - Cassandra Assignment
+
+## Overview
+This project sets up a Cassandra cluster running sensor data storage with a single keyspace and one table.
+
+## Docker Compose
+- Modified `docker-compose.yml` contains only the Cassandra service.
+- Run `docker-compose up -d` to start Cassandra.
+
+## Schema
+- The schema is defined in `schema/schema.cql`:
+  - Keyspace: `sensor_data`
+  - Table: `environmental_readings` with 10 columns including id, timestamp, location, temperature, humidity, etc.
+
+## Sample Data Insertion
+- Python script `insert_and_plot.py` inserts simulated sensor readings.
+- Data includes random values for temperature, humidity, solar irradiation, and timestamps.
+
+## Queries
+- Example query to get readings for Tbilisi:
+  ```cql
+  SELECT * FROM environmental_readings WHERE location='Tbilisi' ALLOW FILTERING;
