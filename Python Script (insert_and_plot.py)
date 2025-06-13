@@ -1,0 +1,62 @@
+from cassandra.cluster import Cluster
+from cassandra.query import SimpleStatement
+import uuid
+import random
+from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+
+cluster = Cluster(['127.0.0.1'])
+session = cluster.connect('sensor_data')
+
+def insert_sample_data(n=20):
+    base_time = datetime.utcnow()
+    for i in range(n):
+        id_ = uuid.uuid4()
+        timestamp = base_time + timedelta(minutes=i*5)
+        location = random.choice(['Tbilisi', 'Batumi', 'Kutaisi'])
+        temperature = round(random.uniform(15, 30), 1)
+        humidity = round(random.uniform(40, 70), 1)
+        solar_irradiation = round(random.uniform(800, 1400), 1)
+        temp_diff_prev = round(random.uniform(-0.5, 0.5), 2)
+        humidity_diff_prev = round(random.uniform(-1, 1), 2)
+        solar_irradiation_diff_prev = round(random.uniform(-10, 10), 2)
+        data_source = random.choice(['sensor-A', 'sensor-B'])
+
+        session.execute("""
+            INSERT INTO environmental_readings (
+                id, timestamp, location, temperature, humidity,
+                solar_irradiation, temp_diff_prev, humidity_diff_prev,
+                solar_irradiation_diff_prev, data_source)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (id_, timestamp, location, temperature, humidity,
+              solar_irradiation, temp_diff_prev, humidity_diff_prev,
+              solar_irradiation_diff_prev, data_source))
+
+def fetch_data(location='Tbilisi'):
+    rows = session.execute(
+        "SELECT timestamp, temperature, solar_irradiation FROM environmental_readings WHERE location=%s ALLOW FILTERING",
+        (location,)
+    )
+    timestamps = []
+    temperatures = []
+    solar = []
+    for row in rows:
+        timestamps.append(row.timestamp)
+        temperatures.append(row.temperature)
+        solar.append(row.solar_irradiation)
+    return timestamps, temperatures, solar
+
+def plot_data(timestamps, temperatures, solar):
+    plt.figure(figsize=(10,5))
+    plt.plot(timestamps, temperatures, label='Temperature (°C)')
+    plt.plot(timestamps, solar, label='Solar Irradiation (W/m²)')
+    plt.xlabel('Timestamp')
+    plt.title('Sensor Data Over Time')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == '__main__':
+    insert_sample_data()
+    ts, temps, solar = fetch_data()
+    plot_data(ts, temps, solar)
